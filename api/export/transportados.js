@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs'; 
+import ExcelJS from 'exceljs';
 
 // Reutilizar funções auxiliares do fabricados.js
 function getAllKeysFromData(data) {
