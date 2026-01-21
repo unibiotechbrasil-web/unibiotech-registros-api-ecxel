@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs'; 
+import ExcelJS from 'exceljs';
 
 export default async function handler(req, res) {
   // Configurar CORS
