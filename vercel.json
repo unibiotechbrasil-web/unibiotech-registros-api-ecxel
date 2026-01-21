@@ -5,7 +5,7 @@
       "memory": 1024
     }
   },
-  "headers": [
+  "headers": [ 
     {
       "source": "/api/(.*)",
       "headers": [
