@@ -126,7 +126,7 @@ export default async function handler(req, res) {
       data = [], 
       startDate = null, 
       endDate = null,
-      fileName = fabricados_${Date.now()}
+      fileName = `fabricados_${Date.now()}`   // ← corrigido aqui
     } = req.body;
     
     // Validar dados
@@ -296,7 +296,7 @@ export default async function handler(req, res) {
     };
     
     if (orderedKeys.length > 1) {
-      worksheet.mergeCells(A${lastRow + 2}:${String.fromCharCode(65 + Math.min(orderedKeys.length - 1, 10))}${lastRow + 2});
+      worksheet.mergeCells(`A${lastRow + 2}:${String.fromCharCode(65 + Math.min(orderedKeys.length - 1, 10))}${lastRow + 2}`);  // ← corrigido aqui
     }
     
     // Gerar buffer do Excel
@@ -310,7 +310,7 @@ export default async function handler(req, res) {
       success: true,
       message: 'Planilha de fabricados gerada com sucesso!',
       data: {
-        fileName: ${fileName}.xlsx,
+        fileName: `${fileName}.xlsx`,          // ← aqui também ajustei para ficar consistente
         fileData: base64Data,
         fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         size: buffer.length,
