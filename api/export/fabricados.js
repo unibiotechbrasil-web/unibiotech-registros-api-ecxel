@@ -1,4 +1,4 @@
-const ExcelJS = require('exceljs');
+import ExcelJS from 'exceljs';
 
 // Função auxiliar para obter todas as chaves
 function getAllKeysFromData(data) {
@@ -104,7 +104,7 @@ function filterByDate(data, dateField, startDate, endDate) {
 }
 
 // Handler principal
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -244,33 +244,9 @@ module.exports = async function handler(req, res) {
         if (value !== undefined && value !== null) {
           // Formatar números
           if (isNumeric(value)) {
-            // MANTÉM LOTES COMO TEXTO - SEM FORMATAÇÃO DE MILHAR
-            if (key.toLowerCase().includes('lote') || 
-                key.toLowerCase().includes('cod') || 
-                key.toLowerCase().includes('ref')) {
-              // Lotese códigos: mantém como texto exato
-              cell.value = value.toString();
-              cell.alignment = { horizontal: 'left', vertical: 'middle' };
-            } 
-            // Quantidades: formata com separador de milhar
-            else if (key.toLowerCase().includes('quantidade') || 
-                     key.toLowerCase().includes('qtd')) {
-              cell.value = parseFloat(value);
-              cell.numFmt = '#,##0';
-              cell.alignment = { horizontal: 'right', vertical: 'middle' };
-            }
-            // Outros números pequenos: mantém como texto
-            else {
-              const numValue = parseFloat(value);
-              if (numValue <= 99999) {
-                cell.value = value.toString();
-                cell.alignment = { horizontal: 'center', vertical: 'middle' };
-              } else {
-                cell.value = numValue;
-                cell.numFmt = '#,##0';
-                cell.alignment = { horizontal: 'right', vertical: 'middle' };
-              }
-            }
+            cell.value = parseFloat(value);
+            cell.numFmt = '#,##0';
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
           } 
           // Formatar datas
           else if (isDateString(value.toString())) {
