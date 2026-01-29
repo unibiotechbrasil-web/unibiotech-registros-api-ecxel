@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs';
+const ExcelJS = require('exceljs');
 
 // Função auxiliar para obter todas as chaves
 function getAllKeysFromData(data) {
@@ -70,76 +70,6 @@ function isDateString(value) {
   return dateRegex.test(value);
 }
 
-// NOVA FUNÇÃO: Verificar se a chave deve ser tratada como número
-function shouldFormatAsNumber(key, value) {
-  // Chaves que DEVEM ser formatadas como número (com separador de milhar)
-  const numericKeys = [
-    'quantidade', 'qtd', 'volume', 'total', 'valor', 
-    'peso', 'numero', 'amount', 'contagem', 'estoque'
-  ];
-  
-  // Chaves que NÃO devem ser formatadas (devem ficar como texto)
-  const textKeys = [
-    'lote', 'codigo', 'cod', 'referencia', 'ref', 
-    'serial', 'id', 'registro', 'protocolo'
-  ];
-  
-  const keyLower = key.toLowerCase();
-  
-  // Se for uma chave de texto, NÃO formata como número
-  for (const textKey of textKeys) {
-    if (keyLower.includes(textKey)) {
-      return false;
-    }
-  }
-  
-  // Se for uma chave numérica, formata como número
-  for (const numericKey of numericKeys) {
-    if (keyLower.includes(numericKey)) {
-      return true;
-    }
-  }
-  
-  // Para outras chaves, só formata se for realmente um número grande
-  // (não formata códigos como 2508, 001, etc.)
-  if (isNumeric(value)) {
-    const numValue = parseFloat(value);
-    // Não formata números que parecem códigos (até 5 dígitos)
-    if (numValue <= 99999 && numValue.toString() === value.toString()) {
-      return false;
-    }
-    return true;
-  }
-  
-  return false;
-}
-
-// NOVA FUNÇÃO: Verificar se é um código/lote
-function isLikelyCode(value) {
-  if (typeof value !== 'string' && typeof value !== 'number') return false;
-  
-  const strValue = value.toString();
-  
-  // Padrões comuns de códigos/lotes
-  const codePatterns = [
-    /^[A-Za-z]{1,3}\d{3,}$/,  // ABC123, AB1234
-    /^\d{3,}[A-Za-z]{1,3}$/,  // 123ABC, 1234AB
-    /^[A-Za-z]+\-\d+$/,       // LOTE-123, PROD-456
-    /^\d+\-[A-Za-z]+$/,       // 123-LOTE, 456-PROD
-    /^[A-Za-z0-9]{6,10}$/,    // Códigos alfanuméricos
-    /^[A-Z]{2,3}\d{4,}$/,     // LT2508, PR2508
-  ];
-  
-  // Verificar se corresponde a algum padrão de código
-  for (const pattern of codePatterns) {
-    if (pattern.test(strValue)) {
-      return true;
-    }
-  }
-  
-  return false;
-}
-
 // Filtrar por data
 function filterByDate(data, dateField, startDate, endDate) {
   if ((!startDate || startDate.trim() === '') && (!endDate || endDate.trim() === '')) {
@@ -174,7 +104,7 @@ function filterByDate(data, dateField, startDate, endDate) {
 }
 
 // Handler principal
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -312,31 +242,34 @@ export default async function handler(req, res) {
         const value = rowData[key];
         
         if (value !== undefined && value !== null) {
-          // FORMATAR NÚMEROS APENAS SE NECESSÁRIO
+          // Formatar números
           if (isNumeric(value)) {
-            const numValue = parseFloat(value);
-            
-            // Verificar se deve formatar como número com separador
-            if (shouldFormatAsNumber(key, value)) {
-              cell.value = numValue;
-              cell.numFmt = '#,##0'; // Formato com separador de milhar
-              cell.alignment = { horizontal: 'right', vertical: 'middle' };
-            } 
-            // Se for código/lote, manter como texto (sem separador)
-            else if (isLikelyCode(value) || key.toLowerCase().includes('lote') || key.toLowerCase().includes('cod')) {
-              cell.value = value.toString(); // Manter como string
+            // MANTÉM LOTES COMO TEXTO - SEM FORMATAÇÃO DE MILHAR
+            if (key.toLowerCase().includes('lote') || 
+                key.toLowerCase().includes('cod') || 
+                key.toLowerCase().includes('ref')) {
+              // Lotese códigos: mantém como texto exato
+              cell.value = value.toString();
               cell.alignment = { horizontal: 'left', vertical: 'middle' };
-            }
-            // Para outros números pequenos (como códigos)
-            else if (numValue <= 99999) {
-              cell.value = value.toString(); // Manter como string
-              cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            }
-            // Números grandes (valores, quantidades grandes)
-            else {
-              cell.value = numValue;
+            } 
+            // Quantidades: formata com separador de milhar
+            else if (key.toLowerCase().includes('quantidade') || 
+                     key.toLowerCase().includes('qtd')) {
+              cell.value = parseFloat(value);
               cell.numFmt = '#,##0';
               cell.alignment = { horizontal: 'right', vertical: 'middle' };
+            }
+            // Outros números pequenos: mantém como texto
+            else {
+              const numValue = parseFloat(value);
+              if (numValue <= 99999) {
+                cell.value = value.toString();
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+              } else {
+                cell.value = numValue;
+                cell.numFmt = '#,##0';
+                cell.alignment = { horizontal: 'right', vertical: 'middle' };
+              }
             }
           } 
           // Formatar datas
